@@ -5,7 +5,9 @@ set -eu
 DEFAULT_PORT=9000
 PORT="${GUNIPORT:-$DEFAULT_PORT}"
 APP_TYPE="${APP_TYPE:-api}"
-GUNICORN_APP="${GUNICORN_APP:-skel.wsgi:app}"
+APP_MODULE="${APP_MODULE:-skel}"
+GUNICORN_APP="${GUNICORN_APP:-${APP_MODULE}.wsgi:app}"
+WORKER_TARGET="${WORKER_TARGET:-${APP_MODULE}.app}"
 
 poetry_exec() {
     if command -v poetry >/dev/null 2>&1; then
@@ -22,7 +24,7 @@ case "$APP_TYPE" in
         ;;
     worker)
         echo "Starting worker process"
-        exec poetry_exec python -m skel.app
+        exec poetry_exec python -m "$WORKER_TARGET"
         ;;
     *)
         echo "Unknown APP_TYPE: $APP_TYPE" >&2

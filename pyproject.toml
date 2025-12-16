@@ -1,6 +1,6 @@
 [project]
-name = "skel-template"
-version = "0.1.0"
+name = "skelv2"
+version = "0.2.0"
 description = "Skeleton template for a microservice."
 authors = [{ name = "Jonathan González", email = "ea1het@ea1het.com" }]
 license = { text = "Mozilla Public License Version 2.0" }
@@ -16,7 +16,7 @@ dependencies = [
 
 [tool.poetry]
 package-mode = false
-packages = [{ include = "skel", from = "src" }]
+packages = [{ include = "skelv2", from = "src" }]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.1"
