@@ -56,6 +56,8 @@ def get_config() -> dict:
         "SERVICE_NAMESPACE": os.getenv("SERVICE_NAMESPACE", "default"),
         # --- Logging ---
         "LOG_LEVEL": os.getenv("LOG_LEVEL", default_log_level),
+        # Explicit override for Flask debug/reloader; defaults to inferred below
+        "FLASK_DEBUG": os.getenv("FLASK_DEBUG"),
         # --- Flask ---
         "FLASK_HOST": os.getenv("FLASK_HOST", "127.0.0.1"),
         "FLASK_PORT": os.getenv("FLASK_PORT", "9000"),
