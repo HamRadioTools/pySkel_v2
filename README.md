@@ -1,44 +1,104 @@
 # pySkel v2
 
-Skeleton template for a Python microservice, v2.0.
+Skeleton template for a Python >=3.12 microservice (API + worker) with ready-to-wire observability and infra hooks.
 
-This skeleton code provides both an HTTP API (Flask + Gunicorn) and a worker loop starter so it feasible to bootstrap either execution mode quickly.
+## What’s Included
 
-## Features
+- API + worker entrypoint (`python -m skelv2.app`) controlled by `APP_TYPE` (`api`/`worker`).
+- Container-friendly `entrypoint.sh` that runs Gunicorn for API or a Python module for worker; env-driven.
+- Health/ready endpoints with optional Redis-backed API-key protection.
+- Structured JSON logging, Postgres + Redis wiring, pytest scaffolding.
+- Name/version alignment helper (`set_versname.py`) to keep code, env files, and folders consistent.
 
-- Unified runtime dispatcher (`python -m skel.app`) that launches API or worker mode depending on `APP_TYPE`.
-- Docker image + `entrypoint.sh` that read the same env vars inside the container.
-- Redis-protected health endpoints (optional; automatically enabled when Redis is configured).
-- Structured JSON logging, Postgres/Redis pools, and integration tests ready to extend.
+### Project Layout
+
+- `src/skelv2/` — app package (renameable via `set_versname.py`).
+  - `api/` — Flask bootstrap, routes, health checks.
+  - `worker/` — worker loop placeholder.
+  - `.env` — service-level defaults (used by `dotenv` on local).
+- `.env` — outer file for local tooling (e.g., `PYTHONPATH="src/<pkg>"`).
+- `entrypoint.sh` — container entrypoint; reads `APP_TYPE`, `APP_MODULE`, `GUNICORN_APP`, `WORKER_TARGET`.
+- `pyproject.toml` — source of truth for project `name` and `version`.
+- `set_versname.py` — synchronizes names/versions across code and env files.
+
+### Configuration Flow
+
+- Local: `.env` (outer) sets `PYTHONPATH="src/<package>"`; `src/<package>/.env` sets service defaults.
+- Runtime config: `src/skelv2/config.py` loads from environment (12-factor). Use env vars in containers/CI.
+- Startup:
+  - `APP_TYPE=api` → Gunicorn runs `<APP_MODULE>.wsgi:app`.
+  - `APP_TYPE=worker` → `python -m <WORKER_TARGET>`.
+  - Defaults: `APP_MODULE=<project_name>`, `GUNICORN_APP=<project_name>.wsgi:app`, `WORKER_TARGET=<project_name>.app`.
+
+### Name & version sync with `set_versname.py`
+
+Run after changing `pyproject.toml` name/version to keep everything aligned.
+
+What it does:
+
+- Reads `[project].name` and `[project].version` plus `[tool.poetry].packages[*].include`.
+- Updates `pyproject.toml` so project name and include match.
+- Rewrites all `__version__` occurrences in `.py` files to the project version.
+- Renames `src/<old>` folder to `src/<project_name>` if needed.
+- Updates `src/<project_name>/.env`:
+  - `SERVICE_NAME` (appends `-service` if missing)
+  - `SERVICE_VERSION`
+  - `APP_MODULE`, `GUNICORN_APP`, `WORKER_TARGET` (derived from project name)
+- Updates outer `.env` `PYTHONPATH="src/<project_name>"`.
+
+Usage:
+
+```bash
+python3 set_versname.py
+```
 
 ## Quickstart
 
-1. Install dependencies (dev + runtime):
+Install dependencies:
 
-   ```bash
-   pip install poetry==1.8.3
-   poetry install
-   ```
+```bash
+pip install poetry==1.8.3
+poetry install
+```
 
-2. Run the API:
+Run API:
 
-   ```bash
-   export APP_TYPE=api FLASK_PORT=9000
-   poetry run python -m skel.app
-   ```
+```bash
+export APP_TYPE=api FLASK_PORT=9000
+poetry run python -m skelv2.app
+```
 
-3. Run the worker:
+Run worker:
 
-   ```bash
-   export APP_TYPE=worker
-   poetry run python -m skel.app
-   ```
+```bash
+export APP_TYPE=worker
+poetry run python -m skelv2.app
+```
 
-### Health endpoints
+## Docker
 
-When `REDIS_ENABLED=true` and Redis credentials are provided, `/health` and `/ready` require a valid API key stored in Redis (`X-API-Key` header). If Redis is disabled, the endpoints remain open for local testing. This is an intentional design.
+Build:
 
-Example: seed an API key for quick tests (replace values as needed):
+```bash
+docker build -f iac/docker/alpine.dockerfile -t skelv2 .
+```
+
+Key env vars:
+
+- `APP_TYPE`: `api` or `worker`
+- `GUNIPORT`: Gunicorn port (default 9000)
+- `APP_MODULE` / `GUNICORN_APP` / `WORKER_TARGET`: override module names if renamed
+- `REDIS_*`, `PG_*`: backing services
+
+`entrypoint.sh` chooses the command based on `APP_TYPE` and module vars.
+
+## Health Endpoints
+
+- `/health`: basic liveness, returns `service` and `version`.
+- `/ready`: checks config presence, optional Redis/PG status.
+- If `REDIS_ENABLED=true` and a Redis client is present, endpoints can be API-key protected (see `util.decorators.require_apikey`).
+
+Seed a key for testing:
 
 ```bash
 redis-cli -h $REDIS_HOST -p $REDIS_PORT -a "$REDIS_PASSWORD" \
@@ -47,67 +107,17 @@ redis-cli -h $REDIS_HOST -p $REDIS_PORT -a "$REDIS_PASSWORD" \
 curl -H "X-API-Key: test-key" http://127.0.0.1:9000/health
 ```
 
-### Tests
+## Logging
+
+Structured JSON to stdout (API and worker). Fields include service, env, file, line, request_id (API), etc., ready for log collectors (Loki/SIEM).
+
+## Tests
 
 ```bash
 poetry run pytest
 ```
 
-The test suite exercises the API routes, the worker heartbeat placeholder and config helpers in this base template. More tests will be required as soon as more funtionality is added to this template.
+## Future work
 
-## Docker Image
-
-Build the container with:
-
-```bash
-docker build -f iac/docker/alpine.dockerfile -t skel .
-```
-
-Runtime env vars:
-
-- `APP_TYPE`: `api` or `worker` (required; defaults to `api` in the entrypoint).
-- `GUNIPORT`: Gunicorn listening port (default 9000).
-- `REDIS_*` / `PG_*`: configure backing services if needed.
-
-`entrypoint.sh` runs Gunicorn with `skel.wsgi:app` for API mode, or starts the worker loop for worker mode.
-
-## Logging
-
-Both modes emit structured JSON logs via `JsonStdoutHandler`. The idea is to provide this structured format to engines that can preprocess and ingest this log formats like Loki and a SIEM, respectively.
-
-API example:
-
-```json
-{
-  "timestamp":"2024-01-15T12:00:00Z",
-  "level":"INFO",
-  "logger":"skel.api.runtime",
-  "message":"GET /health",
-  "service":"micro-service",
-  "env":"local",
-  "file":"/opt/app/src/skel/api/runtime.py",
-  "line":35,
-  "function":"root",
-  "request_id":"e2c6b3a9-...",
-  "http_method":"GET",
-  "http_path":"/health",
-  "remote_ip":"10.0.0.5",
-  "redis_status":"ok"
-}
-```
-
-Worker example:
-
-```json
-{
-  "timestamp":"2024-01-15T12:05:00Z",
-  "level":"INFO",
-  "logger":"skel.worker.runtime",
-  "message":"Worker heartbeat",
-  "service":"worker-service",
-  "env":"local",
-  "file":"/opt/app/src/skel/worker/runtime.py",
-  "line":24,
-  "function":"_perform_work"
-}
-```
+1. Extend easily with new routes/worker tasks.
+1. Add new tests as new features are added.

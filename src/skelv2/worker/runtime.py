@@ -7,15 +7,15 @@
 
 from __future__ import annotations
 
-__updated__ = "2025-12-15 20:18:10"
+__updated__ = "2025-12-16 12:44:07"
 
 import logging
 import signal
 import time
 from typing import Any
 
-from skel.db import init_datastores
-from skel.logging import init_logging
+from db import init_datastores
+from stdoutlog import init_logging
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,11 @@ def _perform_work(config: dict, stores: dict[str, Any]) -> None:
     """
     Placeholder unit of work to be replaced with domain-specific logic.
     """
-    ##
-    ## CODE SHOULD COME HERE
-    ##
+    ############################################################################
+    #
+    # CODE SHOULD COME HERE AND/OR IN ADDITIONAL MODULES IN THIS PACKAGE FOLDER
+    #
+    ############################################################################
     logger.info("Worker heartbeat", extra={"service": config.get("SERVICE_NAME")})
 
 

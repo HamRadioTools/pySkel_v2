@@ -6,7 +6,7 @@
 """PROJECT INITIALIZER"""
 
 __updated__ = "2025-12-15 19:58:23"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = []
 
 # Expose get_config at package level if useful

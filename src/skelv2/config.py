@@ -5,7 +5,7 @@
 
 """Configuration module / Defaults for everything yet to configure"""
 
-__updated__ = "2025-12-15 19:56:39"
+__updated__ = "2025-12-16 17:29:48"
 
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -34,6 +34,8 @@ def get_config() -> dict:
 
     # --- Service environment ---
     # local, dev, test, staging, prod, ...
+    # - local/dev: DEBUG
+    # - others: INFO
     env = os.getenv("SERVICE_ENV", "local")
 
     # Default log level per environment
@@ -48,14 +50,11 @@ def get_config() -> dict:
         # - worker: run the worker
         "APP_TYPE": os.getenv("APP_TYPE", "none"),
         # --- Service ---
+        "SERVICE_ENV": env,
         "SERVICE_NAME": os.getenv("SERVICE_NAME", "micro-service"),
         "SERVICE_VERSION": os.getenv("SERVICE_VERSION", "0.1.0"),
         "SERVICE_NAMESPACE": os.getenv("SERVICE_NAMESPACE", "default"),
-        "SERVICE_ENV": env,
         # --- Logging ---
-        # When LOG_LEVEL is not defined:
-        # - local/dev: DEBUG
-        # - others: INFO
         "LOG_LEVEL": os.getenv("LOG_LEVEL", default_log_level),
         # --- Flask ---
         "FLASK_HOST": os.getenv("FLASK_HOST", "127.0.0.1"),

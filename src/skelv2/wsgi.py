@@ -7,9 +7,9 @@
 
 from __future__ import annotations
 
-__updated__ = "2025-12-15 20:27:36"
+__updated__ = "2025-12-16 03:04:23"
 
-from skel.api import create_api_app
-from skel.config import get_config
+from api import create_api_app
+from config import get_config
 
 app = create_api_app(get_config())

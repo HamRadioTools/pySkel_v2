@@ -5,14 +5,15 @@
 
 """Application entry point dispatcher."""
 
-__updated__ = "2025-12-15 18:00:16"
+__updated__ = "2025-12-16 13:04:33"
 
 import logging
 import sys
 
-from skel.api import run_api_app
-from skel.config import get_config
-from skel.worker import run_worker_app
+from api import run_api_app
+from config import get_config
+from worker import run_worker_app
+from stdoutlog import init_logging
 
 
 def main() -> None:
@@ -27,7 +28,7 @@ def main() -> None:
     elif app_type == "worker":
         run_worker_app(config)
     else:
-        logging.basicConfig(level=logging.ERROR)
+        init_logging(config)
         logging.error(
             "Invalid APP_TYPE %r. Use 'api' or 'worker'. Check your environment or .env file.",
             app_type,

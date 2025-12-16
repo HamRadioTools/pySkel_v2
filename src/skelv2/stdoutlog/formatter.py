@@ -5,11 +5,12 @@
 
 """Logging management package"""
 
-__updated__ = "2025-12-15 17:21:49"
+__updated__ = "2025-12-16 14:25:00"
 
 import json
 import logging
 import re
+import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
@@ -34,6 +35,9 @@ class JsonStdoutHandler(logging.StreamHandler):
         *args,
         **kwargs,
     ) -> None:
+        # Force StreamHandler to target STDOUT for container-friendly logging
+        if "stream" not in kwargs:
+            kwargs["stream"] = sys.stdout
         super().__init__(*args, **kwargs)
         self.service_name = service_name
         self.environment = environment

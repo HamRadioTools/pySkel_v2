@@ -5,7 +5,7 @@
 
 """Various utilities package"""
 
-__updated__ = "2025-12-15 19:59:56"
+__updated__ = "2025-12-16 03:00:59"
 
 import time
 import logging
@@ -13,8 +13,8 @@ import redis.exceptions
 from functools import wraps
 from flask import request, jsonify, g
 
-from skel.db.redis_apikeys import get_apikey_metadata
-from skel.util.request_id import get_or_create_request_id
+from db.redis_apikeys import get_apikey_metadata
+from util.request_id import get_or_create_request_id
 
 logger = logging.getLogger(__name__)
 
