@@ -10,7 +10,7 @@ __updated__ = "2025-12-15 20:43:24"
 import logging
 import pytest
 
-from skel.worker import runtime as worker_runtime
+from skelv2.worker import runtime as worker_runtime
 
 
 @pytest.fixture
@@ -19,6 +19,6 @@ def worker_config():
 
 
 def test_perform_work_logs_heartbeat(worker_config, caplog):
-    caplog.set_level(logging.INFO, logger="skel.worker.runtime")
+    caplog.set_level(logging.INFO, logger="skelv2.worker.runtime")
     worker_runtime._perform_work(worker_config, {})  # noqa: SLF001
     assert "Worker heartbeat" in caplog.text

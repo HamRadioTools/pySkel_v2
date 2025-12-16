@@ -7,7 +7,7 @@
 
 __updated__ = "2025-12-15 20:42:33"
 
-from skel.config import get_config, str_to_bool
+from skelv2.config import get_config, str_to_bool
 
 
 def test_str_to_bool_variants():

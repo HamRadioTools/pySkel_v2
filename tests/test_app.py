@@ -10,8 +10,8 @@ __updated__ = "2025-12-15 20:42:13"
 import json
 import pytest
 
-from skel.api import create_api_app
-from skel.config import get_config
+from skelv2.api import create_api_app
+from skelv2.config import get_config
 
 
 @pytest.fixture
