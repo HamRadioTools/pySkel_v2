@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+import io
 import re
 import shutil
+import tokenize
 from pathlib import Path
 
 try:  # Python 3.11+
@@ -138,11 +140,91 @@ def update_outer_env_pythonpath(project_name: str) -> None:
     OUTER_ENV.write_text("\n".join(new_lines) + "\n")
 
 
+def rewrite_imports(text: str, old_name: str, new_name: str) -> str:
+    buffer = io.StringIO(text)
+    tokens = list(tokenize.generate_tokens(buffer.readline))
+    new_tokens: list[tokenize.TokenInfo] = []
+    state = "default"
+    skip_alias = False
+
+    for tok in tokens:
+        tok_type, tok_str, start, end, line = tok
+
+        if state == "from_module":
+            if tok_type == tokenize.NAME and tok_str == "import":
+                state = "default"
+                new_tokens.append(tok)
+                continue
+            if tok_type == tokenize.NAME and tok_str == old_name:
+                tok = tokenize.TokenInfo(tok_type, new_name, start, end, line)
+            new_tokens.append(tok)
+            continue
+
+        if state == "import_module":
+            if tok_type == tokenize.NEWLINE:
+                state = "default"
+                skip_alias = False
+                new_tokens.append(tok)
+                continue
+            if tok_type == tokenize.OP and tok_str == ";":
+                state = "default"
+                skip_alias = False
+                new_tokens.append(tok)
+                continue
+            if tok_type == tokenize.OP and tok_str == ",":
+                skip_alias = False
+                new_tokens.append(tok)
+                continue
+            if tok_type == tokenize.NAME and tok_str == "as":
+                skip_alias = True
+                new_tokens.append(tok)
+                continue
+            if tok_type == tokenize.NAME and skip_alias:
+                skip_alias = False
+                new_tokens.append(tok)
+                continue
+            if tok_type == tokenize.NAME and tok_str == old_name:
+                tok = tokenize.TokenInfo(tok_type, new_name, start, end, line)
+            new_tokens.append(tok)
+            continue
+
+        if tok_type == tokenize.NAME and tok_str == "from":
+            state = "from_module"
+            new_tokens.append(tok)
+            continue
+
+        if tok_type == tokenize.NAME and tok_str == "import":
+            state = "import_module"
+            skip_alias = False
+            new_tokens.append(tok)
+            continue
+
+        new_tokens.append(tok)
+
+    return tokenize.untokenize(new_tokens)
+
+
+def update_imports(project_name: str, include_name: str) -> None:
+    if project_name == include_name:
+        return
+
+    targets = [SRC_DIR, Path("tests")]
+    for target in targets:
+        if not target.exists():
+            continue
+        for path in target.rglob("*.py"):
+            text = path.read_text()
+            new_text = rewrite_imports(text, include_name, project_name)
+            if new_text != text:
+                path.write_text(new_text)
+
+
 def main() -> None:
     project_name, project_version, include_name = load_pyproject()
     update_pyproject_names(project_name)
     update_versions_in_code(project_version)
     pkg_dir = ensure_package_dir(project_name, include_name)
+    update_imports(project_name, include_name)
     update_env_file(pkg_dir, project_name, project_version)
     update_outer_env_pythonpath(project_name)
 
