@@ -5,7 +5,7 @@
 
 """API package"""
 
-__updated__ = "2025-12-16 12:53:52"
+__updated__ = "2025-12-16 21:38:55"
 
 from flask import jsonify
 
@@ -31,7 +31,6 @@ def register_health_routes(app, *, config: dict, stores: dict | None = None):
         return handler
 
     @app.route("/health", methods=["GET"])
-    # @protect
     def health():
         return jsonify(
             {
@@ -42,7 +41,7 @@ def register_health_routes(app, *, config: dict, stores: dict | None = None):
         )
 
     @app.route("/ready", methods=["GET"])
-    # @protect
+    @protect
     def ready():
         pg_status = {"enabled": bool(config.get("PG_ENABLED", False)), "status": "disabled"}
         if pg_status["enabled"]:
