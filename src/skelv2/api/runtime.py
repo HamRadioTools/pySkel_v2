@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-__updated__ = "2025-12-16 13:03:30"
+__updated__ = "2025-12-16 20:03:18"
 
 import logging
 import time
@@ -29,7 +29,12 @@ def create_api_app(config: dict) -> Flask:
 
     app = Flask(__name__)
     app.json.sort_keys = False
-    logging.getLogger("werkzeug").disabled = True
+
+    # Allow Werkzeug / Gunicorn access logs to flow to our JSON handler
+    werkzeug_logger = logging.getLogger("werkzeug")
+    werkzeug_logger.disabled = False
+    werkzeug_logger.setLevel(logging.INFO)
+    werkzeug_logger.propagate = True  # keep stdout logging in every env
 
     metadata = {
         "service": config.get("SERVICE_NAME"),
@@ -107,5 +112,15 @@ def run_api_app(config: dict) -> None:
     Helper that creates and runs the Flask application in API mode.
     """
     app = create_api_app(config)
-    localdebug = config.get("LOG_LEVEL", "").upper() == "DEBUG"
-    app.run(host=config.get("FLASK_HOST"), port=config.get("FLASK_PORT"), debug=localdebug)
+
+    debug_flag = config.get("FLASK_DEBUG")
+    if isinstance(debug_flag, str):
+        debug_flag = debug_flag.lower() in {"1", "true", "t", "yes", "y"}
+    elif debug_flag is None:
+        debug_flag = config.get("LOG_LEVEL", "").upper() == "DEBUG"
+
+    app.run(
+        host=config.get("FLASK_HOST"),
+        port=config.get("FLASK_PORT"),
+        debug=bool(debug_flag),
+    )
