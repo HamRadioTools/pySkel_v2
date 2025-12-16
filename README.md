@@ -111,6 +111,8 @@ curl -H "X-API-Key: test-key" http://127.0.0.1:9000/health
 
 Structured JSON to stdout (API and worker). Fields include service, env, file, line, request_id (API), etc., ready for log collectors (Loki/SIEM).
 
+- Werkzeug/Gunicorn access logs remain enabled so HTTP traffic is also emitted as JSON; use `LOG_LEVEL` for noise control and override with `FLASK_DEBUG` when you still want the Flask debugger/reloader locally.
+
 ## Tests
 
 ```bash
